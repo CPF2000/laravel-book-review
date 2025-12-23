@@ -60,13 +60,12 @@ class BookController extends Controller
     //不需要ion show(string $id) $id参数，直接传递Book模型,laravel会自动匹配路$id
     public function show(Book $book)
     {
+        $cacheKey = 'book:' . $book->id;
+        $book = cache()->remember($cacheKey, 60, fn() => $book->load(['reviews' => fn($query) => $query->latest()]));
+
         //默认Book $book会加载reviews因为在Book模型中定义了reviews()方法，但是获取的reviews是没有按照created_at排序的，所以需要使用load()方法加载reviews并排序
         return view('books.show', [
-            "book" => $book->load([
-                'reviews' => function ($query) {
-                    return $query->latest();
-                }
-            ])
+            "book" => $book
         ]);
     }
 
