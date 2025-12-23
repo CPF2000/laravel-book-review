@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Book;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use function PHPUnit\Framework\returnArgument;
 
 class BookController extends Controller
 {
@@ -26,7 +28,12 @@ class BookController extends Controller
             'highest_rated_last_6months' => $books->highestRatedLast6Months(),
             default => $books->latest()
         };
-        $books = $books->get();
+        // $books = $books->get();
+        //使用缓存
+        //$books = Cache::remember('books', 60, fn() => $books->get());
+        //或者使用
+        $cacheKey = 'books:' . $filter . ':' . $title;
+        $books = cache()->remember($cacheKey, 60, fn() => $books->get());
         return view('books.index', ["books" => $books]);
         //return view('books.index', compact('books'));//compact('books')将会把$books变量传递给视图
     }
@@ -50,9 +57,17 @@ class BookController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    //不需要ion show(string $id) $id参数，直接传递Book模型,laravel会自动匹配路$id
+    public function show(Book $book)
     {
-        //
+        //默认Book $book会加载reviews因为在Book模型中定义了reviews()方法，但是获取的reviews是没有按照created_at排序的，所以需要使用load()方法加载reviews并排序
+        return view('books.show', [
+            "book" => $book->load([
+                'reviews' => function ($query) {
+                    return $query->latest();
+                }
+            ])
+        ]);
     }
 
     /**
