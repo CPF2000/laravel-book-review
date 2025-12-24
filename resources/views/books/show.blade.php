@@ -2,12 +2,12 @@
 
 @section('content')
   <div class="mb-4">
-    <h1 class="mb-2 text-2xl">{{ $book->title }}</h1>
+    <h1 class="mb-2 text-3xl">{{ $book->title }}</h1>
 
     <div class="book-info">
       <div class="book-author mb-4 text-lg font-semibold">by {{ $book->author }}</div>
       <div class="book-rating flex items-center">
-        <div class="mr-2 text-sm font-medium text-slate-700">
+        <div class="mr-2 text-sm font-medium text-blue-500">
           {{ number_format($book->reviews_avg_rating, 1) }}
         </div>
         <span class="book-review-count text-sm text-gray-500">

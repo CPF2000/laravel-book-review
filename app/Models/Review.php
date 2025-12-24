@@ -15,6 +15,7 @@ class Review extends Model
     {
         return $this->belongsTo(Book::class);
     }
+    //这个固定的booted函数主要用来监听模型事件，当review模型有更新或删除时，清除缓存
     protected static function booted()
     {
         static::updated(fn(Review $review) => cache()->forget('book:' . $review->book_id));

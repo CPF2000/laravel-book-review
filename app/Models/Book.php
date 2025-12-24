@@ -20,15 +20,25 @@ class Book extends Model
     {
         return $query->where('title', 'LIKE', "%$title%");
     }
+
+    public function scopeWithReviewsCount(Builder $query, $from = null, $to = null): Builder|QueryBuilder
+    {
+        return $query->withCount(['reviews' => fn($q) => $this->dateRangeFilter($q, $from, to: $to)]);
+    }
     //过滤评论比较多的书
     public function scopePopular(Builder $query, $from = null, $to = null): Builder|QueryBuilder
     {
-        return $query->withCount(['reviews' => fn($q) => $this->dateRangeFilter($q, $from, $to)])->orderBy('reviews_count', 'desc');
+        return $query->withReviewsCount()->orderBy('reviews_count', 'desc');
     }
+    public function scopeWithAvgRating(Builder $query, $from = null, $to = null): Builder|QueryBuilder
+    {
+        return $query->withAvg(['reviews' => fn($q) => $this->dateRangeFilter($q, $from, $to)], 'rating');
+    }
+
     //过滤得分最高的书
     public function scopeHighestRated(Builder $query, $from = null, $to = null): Builder|QueryBuilder
     {
-        return $query->withAvg(['reviews' => fn($q) => $this->dateRangeFilter($q, $from, $to)], 'rating')->orderBy('reviews_avg_rating', 'desc');
+        return $query->withAvgRating()->orderBy('reviews_avg_rating', 'desc');
     }
     public function scopeMinReviews(Builder $query, int $minReviews): Builder|QueryBuilder
     {
@@ -63,5 +73,10 @@ class Book extends Model
         return $query->highestRated(now()->subMonth(6), now())->popular(now()->subMonth(6), now())->minReviews(5);
     }
 
-
+    //这个固定的booted函数主要用来监听模型事件，当review模型有更新或删除时，清除缓存
+    protected static function booted()
+    {
+        static::updated(fn(Book $book) => cache()->forget('book:' . $book->id));
+        static::deleted(fn(Book $book) => cache()->forget('book:' . $book->id));
+    }
 }
